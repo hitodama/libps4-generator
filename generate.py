@@ -377,7 +377,7 @@ class LibPS4Generator():
                 'syscall': sys,
                 'module': module,
                 'offset': None
-            })
+            }
 
         jsonFile_(self.files['symbols'], symbols, 'w')
 
