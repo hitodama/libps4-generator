@@ -85,7 +85,7 @@ int64_t _main(void)
 
 			/* should use dlsym and lsm from kernel instead */
 			resolveModuleSymbol(&module, &symbol, moduleName, symbolName);
-			for(i = 0; i < 3 && symbol == 0; ++i)
+			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && symbol == 0; ++i)
 			{
 				if(strcmp(modules[i], moduleName) == 0)
 					continue;
