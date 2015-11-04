@@ -21,6 +21,7 @@ The internals of the generated files are explained in more detail in libps4-boil
 ```
 * install python version 3
 * install pycparser (e.g. pip install)
+* to enable checking: adapt the remote address in generate.conf and build and run resolve on the ps4
 ```
 
 ##Use
