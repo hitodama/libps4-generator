@@ -19,9 +19,11 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:=
 
-TARGET = resolv#$(shell basename $(CURDIR))
+TARGET = bin/resolv#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
+	@mkdir -p $@
+	@rmdir $@
 	$(CC) $(ODIR)/*.o -o $(TARGET) $(CFLAGS) $(LFLAGS) $(LIBS)
 
 $(ODIR)/%.o: $(SDIR)/%.c
