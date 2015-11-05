@@ -3,6 +3,7 @@ DATA	:=	0x926300000
 
 OBJCOPY	:=	objcopy
 
+RDIR	:=	bin
 ODIR	:=	build
 SDIR	:=	source
 IDIRS	:=	-I$(LIBPS4)/include -I. -Iinclude
@@ -33,7 +34,7 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:= -lps4
 
-TARGET = bin/resolver#$(shell basename $(CURDIR))
+TARGET = $(RDIR)/resolver#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
 	@mkdir -p $@
@@ -54,4 +55,4 @@ $(ODIR):
 .PHONY: clean
 
 clean:
-	rm -f $(TARGET) $(TARGET).elf $(TARGET).bin $(ODIR)/*.o
+	rm -f $(RDIR) $(ODIR)/*.o
