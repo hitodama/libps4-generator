@@ -6,7 +6,7 @@ OBJCOPY	:=	objcopy
 ODIR	:=	build
 SDIR	:=	source
 IDIRS	:=	-I$(LIBPS4)/include -I. -Iinclude
-LDIRS	:=	-L$(LIBPS4) -L. -Llib
+LDIRS	:=	-L$(LIBPS4)/lib -L. -Llib
 
 ifeq ($(CC),gcc)
    CC		:=	gcc
