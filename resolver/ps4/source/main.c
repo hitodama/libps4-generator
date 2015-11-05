@@ -72,7 +72,7 @@ int64_t _main(void)
 			int64_t module = 0;
 			void *symbol = NULL;
 			int state = 0; // sym - base could be 0
-			int i;
+			int i, r;
 
 			SceKernelModuleInfo info;
 			info.size = sizeof(SceKernelModuleInfo);
@@ -84,13 +84,14 @@ int64_t _main(void)
 				break;
 
 			/* should use dlsym and lsm from kernel instead */
-			resolveModuleAndSymbol(&module, &symbol, moduleName, symbolName);
-			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && symbol == 0; ++i)
+			r = resolveModuleAndSymbol(&module, &symbol, moduleName, symbolName);
+			for(i = 0; i < 2 && r != 0; ++i)
 			{
 				if(strcmp(modules[i], moduleName) == 0)
 					continue;
-				resolveModuleAndSymbol(&module, &symbol, modules[i], symbolName);
-				if(symbol != 0)
+				module = 0;
+				r = resolveModuleAndSymbol(&module, &symbol, modules[i], symbolName);
+				if(r == 0)
 					strcpy(moduleName, modules[i]);
 			}
 
