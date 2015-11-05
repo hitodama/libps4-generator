@@ -33,9 +33,11 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:= -lps4
 
-TARGET = resolver#$(shell basename $(CURDIR))
+TARGET = bin/resolver#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
+	@mkdir -p $@
+	@rmdir $@
 	$(CC) $(LIBPS4)/crt0.s $(ODIR)/*.o -o $(TARGET).elf $(CFLAGS) $(LFLAGS) $(LIBS)
 	@$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
 	@rm -f $(TARGET).elf
