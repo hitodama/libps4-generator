@@ -1,4 +1,4 @@
-/*C*/
+/* C */
 
 #include <assert.h>
 #include <ctype.h>
@@ -16,30 +16,30 @@
 #include <string.h>
 #include <time.h>
 
-/*CNA1*/
+/* CNA1 */
 
 #include <iso646.h>
 #include <wchar.h>
 #include <wctype.h>
 
-/*C99*/
+/* C99 */
 
-#noinclude <complex.h>
+#noinclude <complex.h> /* no symbols */
 #include <fenv.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <tgmath.h>
 
-/*C11*/
+/* C11 */
 
 #include <stdalign.h>
-#noinclude <stdatomic.h>
+#noinclude <stdatomic.h> /* no symbols */
 #include <stdnoreturn.h>
-#noinclude <threads.h>
+#noinclude <threads.h> /* no symbols */
 #include <uchar.h>
 
-/*POSIX*/
+/* POSIX */
 
 #include <aio.h>
 #include <arpa/inet.h>
@@ -66,20 +66,20 @@
 #include <limits.h>
 #include <locale.h>
 #include <math.h>
-#noinclude <monetary.h>
-#noinclude <mqueue.h>
+#include <monetary.h>
+#include <mqueue.h>
 #include <ndbm.h>
 #noinclude <net/if.h>
-#noinclude <netdb.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <nl_types.h>
 #include <poll.h>
 #include <pthread.h>
-#noinclude <pwd.h>
+#include <pwd.h>
 #include <regex.h>
 #include <sched.h>
-#noinclude <search.h>
+#include <search.h>
 #include <semaphore.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -124,7 +124,7 @@
 #include <wctype.h>
 #include <wordexp.h>
 
-/*FreeBSD*/
+/* FreeBSD */
 
 #include <netinet6/in6.h>
 #include <sys/syscall.h>

@@ -124,7 +124,7 @@
 #noinclude <dts_enc.h>
 #noinclude <np_signaling.h>
 #noinclude <remote_play.h>
-#noinclude <usbd.h>
+#include <usbd.h>
 #noinclude <game_custom_data_dialog.h>
 #noinclude <np_eula_dialog.h>
 #noinclude <random.h>
