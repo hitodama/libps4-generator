@@ -4,6 +4,7 @@ AR		:=	ar
 LD		:=	ld#.gold
 OBJCOPY	:=	objcopy
 
+RDIR	:=	bin
 ODIR	:=	build
 SDIR	:=	source
 IDIRS	:=	-I. -Iinclude
@@ -19,9 +20,11 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:=
 
-TARGET = resolv#$(shell basename $(CURDIR))
+TARGET = $(RDIR)/resolv#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
+	@mkdir -p $@
+	@rmdir $@
 	$(CC) $(ODIR)/*.o -o $(TARGET) $(CFLAGS) $(LFLAGS) $(LIBS)
 
 $(ODIR)/%.o: $(SDIR)/%.c
@@ -36,4 +39,4 @@ $(ODIR):
 .PHONY: clean
 
 clean:
-	rm -fR $(TARGET) $(ODIR)
+	rm -fR $(RDIR) $(ODIR)
