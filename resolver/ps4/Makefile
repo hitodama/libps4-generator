@@ -1,8 +1,17 @@
 TEXT	:=	0x926200000
 DATA	:=	0x926300000
 
+ifndef LIBPS4
+ifndef libps4
+$(error Neither LIBPS4 or libps4 set)
+else
+LIBPS4	:= $(libps4)
+endif
+endif
+
 OBJCOPY	:=	objcopy
 
+RDIR	:=	bin
 ODIR	:=	build
 SDIR	:=	source
 IDIRS	:=	-I$(LIBPS4)/include -I. -Iinclude
@@ -33,12 +42,14 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:= -lps4
 
-TARGET = resolver#$(shell basename $(CURDIR))
+TARGET = $(RDIR)/resolver#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
+	@mkdir -p $@
+	@rmdir $@
 	$(CC) $(LIBPS4)/crt0.s $(ODIR)/*.o -o $(TARGET).elf $(CFLAGS) $(LFLAGS) $(LIBS)
 	@$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
-	@rm -f $(TARGET).elf
+#@rm -f $(TARGET).elf
 
 $(ODIR)/%.o: $(SDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -52,4 +63,4 @@ $(ODIR):
 .PHONY: clean
 
 clean:
-	rm -f $(TARGET) $(TARGET).elf $(TARGET).bin $(ODIR)/*.o
+	rm -fR $(RDIR) $(ODIR)/*.o
