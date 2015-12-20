@@ -278,16 +278,16 @@ class LibPS4Generator():
         return LibPS4Util.moduleName(name)
 
     def clean(self, where = None):
-        w = ['include', 'source', 'Makefile', 'crt0.s']
+        w = ['include', 'source', 'stub', 'build', 'lib', 'Makefile', 'crt0.s', 'symbols.mk']
         if where in w:
             w = [where]
         for f in w:
             p = os.path.join(self.config['paths']['libps4'], f)
             shutil.rmtree(p, ignore_errors = True)
-
-    def cleanSource(self):
-        p = os.path.join(self.config['paths']['libps4'], 'source')
-        shutil.rmtree(p, ignore_errors = True)
+            try:
+                os.remove(p)
+            except:
+                pass
 
     def cleanSelf(self):
         p = os.path.join(self.config['paths']['libps4'], 'data')
@@ -404,13 +404,18 @@ class LibPS4Generator():
 
     def generate(self):
         file = os.path.join(self.config['paths']['libps4'], 'symbols.mk')
-        os.remove(file)
+        try:
+            os.remove(file)
+        except:
+            pass
 
+        out = {}
         with jsonFile(self.files['symbols'], {}, 'r') as modules:
             for moduleName in modules:
-                fsyms = []
-                fssyms = []
-                ssyms = []
+                out[moduleName] = {}
+                out[moduleName]['fsyms'] = []
+                out[moduleName]['fssyms'] = []
+                out[moduleName]['ssyms'] = []
 
                 symbols = modules[moduleName]
                 for symbolName in symbols:
@@ -419,22 +424,27 @@ class LibPS4Generator():
                         continue
                     if 'syscall' in symbol:
                         if symbol['offset'] is None:
-                            ssyms.append(symbolName)
+                            out[moduleName]['ssyms'].append(symbolName)
                         else:
-                            fssyms.append(symbolName)
+                            out[moduleName]['fssyms'].append(symbolName)
                     else:
-                        fsyms.append(symbolName)
+                        out[moduleName]['fsyms'].append(symbolName)
 
-                with open(file, 'a') as f:
-                    f.write('$(eval $(call GENERATE, ' +
-                        moduleName.replace('.sprx', '') +
-                        ', ' +
-                        self.headerName(moduleName).replace('.h', '') +
-                        ', \\\n')
-                    f.write(' '.join(fsyms) + ', \\\n')
-                    f.write(' '.join(fssyms) + ', \\\n')
-                    f.write(' '.join(ssyms) + ' \\\n')
-                    f.write('))\n\n')
+                out[moduleName]['module'] = moduleName.replace('.sprx', '')
+                out[moduleName]['header'] = self.headerName(moduleName).replace('.h', '')
+                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
+                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
+                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
+
+        with open(file, 'a') as f:
+            for k in sorted(out.keys()):
+                f.write('$(eval $(call GENERATE, ' +
+                    out[k]['module'] + ', ' +
+                    out[k]['header'] + ', ' +
+                    ' '.join(out[k]['fsyms']) + ', ' +
+                    ' '.join(out[k]['fssyms']) + ', ' +
+                    ' '.join(out[k]['ssyms']) +
+                    '))\n')
 
     def default(self):
         for act in self.config['default']:
