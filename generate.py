@@ -10,6 +10,8 @@ import json
 from contextlib import contextmanager
 from pycparser import c_parser, c_ast, parse_file
 
+#warning to python gurus. Ugly target-oriented code.
+
 class LibPS4Util:
 
     @staticmethod
@@ -42,6 +44,10 @@ class LibPS4Util:
     @staticmethod
     def ignoreGitDir(src, lst):
         return [x for x in lst if '.git' in x]
+
+    @staticmethod
+    def ignoreBoilDirs(src, lst):
+        return [x for x in lst if '.git' in x or 'LICENSE' in x or 'README.md' in x]
 
     @staticmethod
     def makedirs(dir):
@@ -82,9 +88,7 @@ class LibPS4Util:
         r = []
         with open(file, 'r') as f:
             for l in f:
-                for i in re.findall('\#include \<(.*)\>', l):
-                    r.append(i)
-                for i in re.findall('\#include \"(.*)\"', l):
+                for i in re.findall('\#include [\<\"](.*)[\>\"]', l):
                     r.append(i)
         return r
 
@@ -104,9 +108,7 @@ class LibPS4Util:
         r = {}
         with open(file, 'r') as f:
             for l in f:
-                for m in re.findall('\#include \<(.*)\>\t// as \[(.*)\]', l):
-                    r[m[0]] = m[1]
-                for m in re.findall('\#include \"(.*)\"\t// as \[(.*)\]', l):
+                for m in re.findall('\#include [\<\"](.*)[\>\"]\t// as \[(.*)\]', l):
                     r[m[0]] = m[1]
         return r
 
@@ -141,33 +143,6 @@ class LibPS4Util:
     def touchDirs(file):
         LibPS4Util.makedirs(file)
         shutil.rmtree(file, ignore_errors = True)
-
-    @staticmethod
-    def generateModuleSource(file, header, module):
-        LibPS4Util.touchDirs(file)
-        with open(file, 'w') as f:
-            f.write('#include <' + header + '>\n')
-            f.write('#include <internal/resolve.h>\n\n')
-            f.write('Module(' + module + ')\n')
-
-    @staticmethod
-    def generateFunctionSource(file, header, module, symbol, syscall=False):
-        LibPS4Util.touchDirs(file)
-        with open(file, 'w') as f:
-            f.write('#include <' + header + '>\n')
-            f.write('#include <internal/resolve.h>\n\n')
-            f.write('Function')
-            if syscall:
-                f.write('OrSyscall')
-            f.write('(' + module + ', ' + symbol + ')\n')
-
-    @staticmethod
-    def generateSyscallSource(file, header, symbol):
-        LibPS4Util.touchDirs(file)
-        with open(file, 'w') as f:
-            f.write('#include <' + header + '>\n')
-            f.write('#include <internal/resolve.h>\n\n')
-            f.write('Syscall(' + symbol + ')\n')
 
     @staticmethod
     def functionDeclarations(includeDir, includeFile):
@@ -260,7 +235,7 @@ def jsonFile(file, data = {}, access = 'rw'):
             with open(file, 'w') as f:
                 json.dump(data, f, indent=4, sort_keys=True)
 
-#fix this properly ... eventually ...
+#fix this properly ... eventually ... maybe ... meh ...
 def jsonFile_(file, data = {}, access = 'rw'):
     with jsonFile(file, data, access):
         pass
@@ -336,15 +311,15 @@ class LibPS4Generator():
         for i in LibPS4Util.extractCIncludes(self.config['paths']['stdIndex']):
             self.importFile(i, self.config['paths']['stdInclude'])
 
-    def importSCE(self):
+    def importSce(self):
         for i in LibPS4Util.extractCIncludes(self.config['paths']['sceIndex']):
             self.importFile(i, self.config['paths']['sceInclude'])
 
     def _import(self, what = 'all'):
-        if what == 'sce' or what == 'all':
+        if what != 'sce' or what == 'all':
             self.importStd()
         if what != 'std' or what == 'all':
-            self.importSCE()
+            self.importSce()
 
     def collect(self):
         decls = {}
@@ -371,43 +346,55 @@ class LibPS4Generator():
             if decls[d] in sceIncludes:
                 module = self.moduleName(decls[d])
 
-            symbols[d] = \
-            {
-                'header': decls[d],
-                'syscall': sys,
-                'module': module,
-                'offset': None
-            }
+            if not module in symbols:
+                symbols[module] = {}
+
+            symbols[module][d] = {}
+            if not sys is None:
+                symbols[module][d]['syscall'] = sys
+            symbols[module][d]['offset'] = None
 
         jsonFile_(self.files['symbols'], symbols, 'w')
 
     def boil(self):
         LibPS4Util.copytree(self.config['paths']['boilerplate'], \
-            self.config['paths']['libps4'], ignore=LibPS4Util.ignoreGitDir)
+            self.config['paths']['libps4'], ignore=LibPS4Util.ignoreBoilDirs)
 
     def fake(self):
-        with jsonFile(self.files['symbols'], {}) as symbols:
-            for symbolName in symbols:
-                if symbols[symbolName]['syscall'] is None:
+        with jsonFile(self.files['symbols'], {}) as modules:
+            for moduleName in modules:
+                symbols = modules[moduleName]
+                for symbolName in symbols:
                     symbols[symbolName]['offset'] = 0
 
     def check(self):
-        with jsonFile(self.files['symbols'], {}) as symbols:
-            for symbolName in symbols:
-                symbol = symbols[symbolName]
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                    sock.connect((self.config['remote']['ip'], self.config['remote']['port']))
-                    m = bytearray(symbol['module'] + ' ' + symbolName, encoding='UTF-8')
-                    m = m.ljust(128, b'\0')
-                    sock.sendall(m)
-                    res = sock.recv(128).decode(encoding='UTF-8').rstrip('\0')
-                    module, symbol['offset'], found = res.split(' ')
+        mods = {}
+        with jsonFile(self.files['symbols'], {}) as modules:
+            for moduleName in modules:
+                symbols = modules[moduleName]
+                for symbolName in symbols:
+                    symbol = symbols[symbolName]
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                        sock.connect((self.config['remote']['ip'], self.config['remote']['port']))
+                        m = bytearray(moduleName + ' ' + symbolName, encoding='UTF-8')
+                        m = m.ljust(128, b'\0')
+                        sock.sendall(m)
+                        res = sock.recv(128).decode(encoding='UTF-8').rstrip('\0')
+                        module, symbol['offset'], found = res.split(' ')
 
-                if symbol['module'] != module:
-                    symbol['guessed'] = symbol['module']
-                symbol['module'] = module
-                if found == '0':
-                    symbol['offset'] = None
+                        if moduleName != module:
+                            mods[symbolName] = symbol
+                            symbol['guessed'] = moduleName
+                            symbol['module'] = module
+                        if found == '0':
+                            symbol['offset'] = None
+
+            for symbolName in mods:
+                symbol = mods[symbolName]
+                modules[symbol['module']][symbolName] = symbol
+                del modules[symbol['guessed']][symbolName]
+                del symbol['module']
+                del symbol['guessed']
 
     def checkOrFake(self):
         try:
@@ -416,27 +403,38 @@ class LibPS4Generator():
             self.fake()
 
     def generate(self):
-        with jsonFile(self.files['symbols'], {}) as symbols:
-            for symbolName in symbols:
-                symbol = symbols[symbolName]
-                if symbol['syscall'] is None and symbol['offset'] is None:
-                    continue
+        file = os.path.join(self.config['paths']['libps4'], 'symbols.mk')
+        os.remove(file)
 
-                header = self.headerName(symbol['module'])
-                module = os.path.join(self.config['paths']['libps4'], 'source', symbol['module'], header.replace('.h','.c'))
-                sys = True if symbol['syscall'] is not None else False
+        with jsonFile(self.files['symbols'], {}, 'r') as modules:
+            for moduleName in modules:
+                fsyms = []
+                fssyms = []
+                ssyms = []
 
-                file = os.path.join(self.config['paths']['libps4'], 'source', symbol['module'], symbolName + '.c')
+                symbols = modules[moduleName]
+                for symbolName in symbols:
+                    symbol = symbols[symbolName]
+                    if not 'syscall' in symbol and symbol['offset'] is None:
+                        continue
+                    if 'syscall' in symbol:
+                        if symbol['offset'] is None:
+                            ssyms.append(symbolName)
+                        else:
+                            fssyms.append(symbolName)
+                    else:
+                        fsyms.append(symbolName)
 
-                LibPS4Util.touch(os.path.join(self.config['paths']['libps4'], 'include', header))
-                LibPS4Util.touchDirs(file)
-
-                mo = symbol['module'].replace('.sprx', '')
-                LibPS4Util.generateModuleSource(module, header, mo)
-                if symbol['offset'] is not None:
-                    LibPS4Util.generateFunctionSource(file, header, mo, symbolName, sys)
-                elif symbol['syscall'] is not None:
-                    LibPS4Util.generateSyscallSource(file, header, symbolName)
+                with open(file, 'a') as f:
+                    f.write('$(eval $(call GENERATE, ' +
+                        moduleName.replace('.sprx', '') +
+                        ', ' +
+                        self.headerName(moduleName).replace('.h', '') +
+                        ', \\\n')
+                    f.write(' '.join(fsyms) + ', \\\n')
+                    f.write(' '.join(fssyms) + ', \\\n')
+                    f.write(' '.join(ssyms) + ' \\\n')
+                    f.write('))\n\n')
 
     def default(self):
         for act in self.config['default']:

@@ -20,7 +20,7 @@ OBJS	:=	$(patsubst $(SDIR)/%.c, build/%.o, $(CFILES)) $(patsubst $(SDIR)/%.s, bu
 
 LIBS	:=
 
-TARGET = $(RDIR)/resolv#$(shell basename $(CURDIR))
+TARGET = $(RDIR)/resolve#$(shell basename $(CURDIR))
 
 $(TARGET): $(ODIR) $(OBJS)
 	@mkdir -p $@

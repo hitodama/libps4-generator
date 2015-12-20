@@ -14,7 +14,7 @@
 
 #include <kernel.h>
 
-#include <internal/resolve.h>
+#include <ps4/internal/resolve.h>
 
 #define IP(a, b, c, d) (((a) << 0) + ((b) << 8) + ((c) << 16) + ((d) << 24))
 #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
@@ -72,7 +72,8 @@ int64_t _main(void)
 			int64_t module = 0;
 			void *symbol = NULL;
 			int state = 0; // sym - base could be 0
-			int i, r;
+			int i;
+			PS4ResolveStatus r;
 
 			SceKernelModuleInfo info;
 			info.size = sizeof(SceKernelModuleInfo);
@@ -84,13 +85,13 @@ int64_t _main(void)
 				break;
 
 			/* should use dlsym and lsm from kernel instead */
-			r = resolveModuleAndSymbol(&module, &symbol, moduleName, symbolName);
-			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && r != 0; ++i)
+			r = ps4ResolveModuleAndSymbol(moduleName, symbolName, &module, &symbol);
+			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && r != PS4ResolveStatusSuccess; ++i)
 			{
 				if(strcmp(modules[i], moduleName) == 0)
 					continue;
 				module = 0;
-				r = resolveModuleAndSymbol(&module, &symbol, modules[i], symbolName);
+				r = ps4ResolveModuleAndSymbol(modules[i], symbolName, &module, &symbol);
 				if(r == 0)
 					strcpy(moduleName, modules[i]);
 			}
