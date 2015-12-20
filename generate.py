@@ -433,8 +433,8 @@ class LibPS4Generator():
                 out[moduleName]['module'] = moduleName.replace('.sprx', '')
                 out[moduleName]['header'] = self.headerName(moduleName).replace('.h', '')
                 out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
-                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
-                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
+                out[moduleName]['fssyms'] = sorted(out[moduleName]['fssyms'])
+                out[moduleName]['ssyms'] = sorted(out[moduleName]['ssyms'])
 
         with open(file, 'a') as f:
             for k in sorted(out.keys()):
