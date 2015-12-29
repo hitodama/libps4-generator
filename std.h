@@ -129,3 +129,5 @@
 #include <netinet6/in6.h>
 #include <sys/syscall.h>
 #include <sys/syslimits.h>
+#include <sys/elf.h>
+#include <elf.h>

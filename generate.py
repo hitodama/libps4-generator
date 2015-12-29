@@ -150,53 +150,57 @@ class LibPS4Util:
 
         if includeFile.endswith('in6.h'):
             return (decls, None)
-        if 'internal/' in includeFile:
+        if 'ps4/internal/' in includeFile:
             return (decls, None)
+
+        args = \
+        [
+            r'-E',
+            r'-w',
+            r'-I' + includeDir,
+            r'-nostdinc',
+            r'-std=c11',
+            r'-D_POSIX_C_SOURCE=200809',
+            r'-D__ISO_C_VISIBLE=1999',
+            r'-D__POSIX_VISIBLE=200809',
+            r'-D__XSI_VISIBLE=700',
+            r'-D__BSD_VISIBLE=1',
+            r'-D__ISO_C_VISIBLE=1999',
+            r'-Dlint',
+            r'-D__builtin_va_list=int',
+            r'-D__attribute__(...)=',
+            r'-D__extension__(...)=',
+            r'-D__format__(...)=',
+            r'-D__typeof__(...)=',
+            r'-D__asm__(...)=',
+            r'-D__inline=',
+            r'-D__volatile=',
+            r'-D__asm(...)=',
+            r'-Dvolatile(...)=',
+            r'-Duintfptr_t=int',
+            r'-Dintrmask_t=int',
+            r'-Dsa_family_t=int',
+            r'-D_SA_FAMILY_T_DECLARED',
+            r'-DLIST_HEAD(...)=',
+            r'-DLIST_ENTRY(...)=int',
+            r'-DTAILQ_HEAD(...)=',
+            r'-DTAILQ_ENTRY(...)=int',
+            r'-DSLIST_HEAD(...)=',
+            r'-DSLIST_ENTRY(...)=int',
+            #r'-includestdlib.h',
+            #r'-includestdio.h',
+            r'-includesys/cdefs.h',
+            r'-includemachine/_types.h',
+            r'-includesys/types.h',
+            r'-includesys/_stdint.h',
+            r'-includesys/elf.h',
+            r'-D__ELF_WORD_SIZE=64',
+        ]
 
         try:
             ast = parse_file(includeFile, use_cpp=True,
                 cpp_path='gcc',
-                cpp_args=
-                [
-                    r'-E',
-                    r'-w',
-                    r'-I' + includeDir,
-                    r'-nostdinc',
-                    r'-std=c11',
-                    r'-D_POSIX_C_SOURCE=200809',
-                    r'-D__ISO_C_VISIBLE=1999',
-                    r'-D__POSIX_VISIBLE=200809',
-                    r'-D__XSI_VISIBLE=700',
-                    r'-D__BSD_VISIBLE=1',
-                    r'-D__ISO_C_VISIBLE=1999',
-                    r'-Dlint',
-                    r'-D__builtin_va_list=int',
-                    r'-D__attribute__(...)=',
-                    r'-D__extension__(...)=',
-                    r'-D__format__(...)=',
-                    r'-D__typeof__(...)=',
-                    r'-D__asm__(...)=',
-                    r'-D__inline=',
-                    r'-D__volatile=',
-                    r'-D__asm(...)=',
-                    r'-Dvolatile(...)=',
-                    r'-Duintfptr_t=int',
-                    r'-Dintrmask_t=int',
-                    r'-Dsa_family_t=int',
-                    r'-D_SA_FAMILY_T_DECLARED',
-                    r'-DLIST_HEAD(...)=',
-                    r'-DLIST_ENTRY(...)=int',
-                    r'-DTAILQ_HEAD(...)=',
-                    r'-DTAILQ_ENTRY(...)=int',
-                    r'-DSLIST_HEAD(...)=',
-                    r'-DSLIST_ENTRY(...)=int',
-                    #r'-includestdlib.h',
-                    #r'-includestdio.h',
-                    r'-includesys/cdefs.h',
-                    r'-includemachine/_types.h',
-                    r'-includesys/types.h',
-                    r'-includesys/_stdint.h',
-                ]
+                cpp_args=args
             )
 
             v = LibPS4FunctionDeclarationsVisitor(includeDir, decls)
@@ -204,7 +208,12 @@ class LibPS4Util:
             #ast.show()
 
         except Exception as e:
+            print('--->>> ' + includeFile)
             print(e)
+            p = 'gcc ' + includeFile + ' ' + ' '.join(args).replace(' -std=c11',' "-std=c11').replace(' -i', '" "-i').replace(' -D', '" -D"') + '"'
+            print(p)
+            print(os.popen(p).read())
+            print('<<<--- ' + includeFile)
             (decls, e)
 
         return (decls, None)
@@ -438,7 +447,7 @@ class LibPS4Generator():
 
         with open(file, 'a') as f:
             for k in sorted(out.keys()):
-                f.write('$(eval $(call GENERATE, ' +
+                f.write('$(eval $(call generate, ' +
                     out[k]['module'] + ', ' +
                     out[k]['header'] + ', ' +
                     ' '.join(out[k]['fsyms']) + ', ' +

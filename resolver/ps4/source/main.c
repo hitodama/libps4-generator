@@ -22,7 +22,7 @@
 
 #define MessageSize 128
 
-int64_t _main(void)
+int main(void)
 {
 	int server, client;
 	struct sockaddr_in serverAddress, clientAddress;
@@ -31,8 +31,10 @@ int64_t _main(void)
 
 	char m1[] = "libSceLibcInternal.sprx";
 	char m2[] = "libkernel.sprx";
-	/*char m3[] = "librt.sprx";*/
-	char *modules[] = {m1, m2};
+	char m3[] = "librt.sprx";
+	char *modules[] = {m1, m2, m3};
+
+	int run = 1;
 
 	memset(&serverAddress, 0, sizeof(serverAddress));
 	serverAddress.sin_len = sizeof(serverAddress);
@@ -46,6 +48,9 @@ int64_t _main(void)
 	if(server < 0)
 		return EXIT_FAILURE;
 
+	setsockopt(server, SOL_SOCKET, SO_REUSEADDR, (char *)&(int){ 1 }, sizeof(int));
+	setsockopt(server, SOL_SOCKET, SO_REUSEPORT, (char *)&(int){ 1 }, sizeof(int));
+
 	if(bind(server, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
 	{
 		close(server);
@@ -58,7 +63,7 @@ int64_t _main(void)
 		return EXIT_FAILURE;
 	}
 
-	while(1)
+	while(run)
 	{
 		client = accept(server, NULL, NULL);
 
@@ -80,6 +85,12 @@ int64_t _main(void)
 
 			if(read(client, message, MessageSize) <= 0)
 				break;
+
+			if(strncmp(message, "exit\0", 5) == 0)
+			{
+				run = 0;
+				break;
+			}
 
 			if(sscanf(message, "%s %s", moduleName, symbolName) < 2)
 				break;
@@ -117,4 +128,6 @@ int64_t _main(void)
 	}
 
 	close(server);
+
+	return EXIT_SUCCESS;
 }
