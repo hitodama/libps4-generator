@@ -165,6 +165,7 @@ class LibPS4Util:
             r'-D__POSIX_VISIBLE=200809',
             r'-D__XSI_VISIBLE=700',
             r'-D__BSD_VISIBLE=1',
+            r'-D_DEFAULT_SOURCE=1',
             r'-D__ISO_C_VISIBLE=1999',
             r'-Dlint',
             r'-D__builtin_va_list=int',

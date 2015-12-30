@@ -1,4 +1,7 @@
 #define _XOPEN_SOURCE 700
+#define __BSD_VISIBLE 1
+#define _DEFAULT_SOURCE 1
+
 
 #include <stdlib.h>
 #include <stdio.h>
