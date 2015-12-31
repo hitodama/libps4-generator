@@ -70,7 +70,7 @@ libps4/include/*                # Headers which are imported (std and/or sce)
 libps4/source/*                 # Stubs generated from headers and found on the PS4
 libps4/include|source/internal  # base boilerplate, copied on boil
 include/sys/syscall.h           # base syscall map overrides on boil
-Makefile, crt0.s                # base boilerplate, copied on boil
+Makefile, crt0.s, make          # base boilerplate, copied on boil
 ```
 
 ###File generated and provided up to date for your convenience in ps4dev/libps4-symbols

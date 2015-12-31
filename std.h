@@ -126,6 +126,8 @@
 
 /* FreeBSD */
 
+#include <machine/segments.h>
+#include <machine/sysarch.h>
 #include <netinet6/in6.h>
 #include <sys/syscall.h>
 #include <sys/syslimits.h>
