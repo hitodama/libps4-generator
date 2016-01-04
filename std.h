@@ -133,3 +133,4 @@
 #include <sys/syslimits.h>
 #include <sys/elf.h>
 #include <elf.h>
+#include <err.h>
