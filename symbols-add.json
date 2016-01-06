@@ -1,0 +1,13 @@
+{
+    "libSceLibcInternal.sprx": {
+        "__stack_chk_fail": {
+            "offset": null
+        },
+        "__stack_chk_fail_local": {
+            "offset": null
+        },
+        "__stack_chk_guard": {
+            "offset": null
+        }
+    }
+}

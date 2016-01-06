@@ -167,6 +167,7 @@ class LibPS4Util:
             r'-D__BSD_VISIBLE=1',
             r'-D_DEFAULT_SOURCE=1',
             r'-D__ISO_C_VISIBLE=1999',
+            # From here on manual fixes for parsing various include files ...
             r'-Dlint',
             r'-D__builtin_va_list=int',
             r'-D__attribute__(...)=',
@@ -188,6 +189,7 @@ class LibPS4Util:
             r'-DTAILQ_ENTRY(...)=int',
             r'-DSLIST_HEAD(...)=',
             r'-DSLIST_ENTRY(...)=int',
+            # Very specific fixes for missing includes or defines in some files ...
             #r'-includestdlib.h',
             #r'-includestdio.h',
             r'-includesys/cdefs.h',
@@ -343,6 +345,12 @@ class LibPS4Generator():
         for file in LibPS4Util.walkFiles(inc):
             ds, err = LibPS4Util.functionDeclarations(inc, file)
             LibPS4Util.deepDictUpdate(decls, ds)
+
+        with jsonFile(self.config['paths']['symbolsAdd'], {}) as modules:
+            for moduleName in modules:
+                syms = modules[moduleName]
+                for symbolName in syms:
+                    decls[symbolName] = 'dummy.h'
 
         for d in decls:
             sys = None

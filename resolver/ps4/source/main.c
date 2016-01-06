@@ -2,7 +2,6 @@
 #define __BSD_VISIBLE 1
 #define _DEFAULT_SOURCE 1
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,10 +17,6 @@
 #include <kernel.h>
 
 #include <ps4/internal/resolve.h>
-
-#define IP(a, b, c, d) (((a) << 0) + ((b) << 8) + ((c) << 16) + ((d) << 24))
-#define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
-#define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
 
 #define MessageSize 128
 
@@ -77,7 +72,7 @@ int main(void)
 		{
 			char moduleName[128];
 			char symbolName[128];
-			int64_t module = 0;
+			int module = 0;
 			void *symbol = NULL;
 			int state = 0; // sym - base could be 0
 			int i;
@@ -114,7 +109,7 @@ int main(void)
 			{
 				state = 1;
 				if(sceKernelGetModuleInfo(module, &info) == 0)
-					symbol = (void *)((uintptr_t)symbol - (uintptr_t)info.codeBase);
+					symbol = (void *)((uintptr_t)symbol - (uintptr_t)(info.segmentInfo[0].address));
 				else
 					state = 2;
 			}
