@@ -1,5 +1,5 @@
 {
-    "libSceLibcInternal.sprx": {
+    "libkernel.sprx": {
         "__stack_chk_fail": {
             "offset": null
         },
