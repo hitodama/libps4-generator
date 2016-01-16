@@ -124,13 +124,14 @@
 #include <wctype.h>
 #include <wordexp.h>
 
-/* FreeBSD */
+/* FreeBSD and heritage */
 
+#include <elf.h>
+#include <err.h>
 #include <machine/segments.h>
 #include <machine/sysarch.h>
 #include <netinet6/in6.h>
+#include <sys/elf.h>
+#include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <sys/syslimits.h>
-#include <sys/elf.h>
-#include <elf.h>
-#include <err.h>
