@@ -197,6 +197,8 @@ class LibPS4Util:
             r'-includesys/types.h',
             r'-includesys/_stdint.h',
             r'-includesys/elf.h',
+            r'-includevm/vm.h',
+            r'-includemachine/pmap.h',
             r'-D__ELF_WORD_SIZE=64',
         ]
 
@@ -346,7 +348,7 @@ class LibPS4Generator():
             ds, err = LibPS4Util.functionDeclarations(inc, file)
             LibPS4Util.deepDictUpdate(decls, ds)
 
-        with jsonFile(self.config['paths']['symbolsAdd'], {}) as modules:
+        with jsonFile(self.config['paths']['symbolsAdd'], {}, 'r') as modules:
             for moduleName in modules:
                 syms = modules[moduleName]
                 for symbolName in syms:

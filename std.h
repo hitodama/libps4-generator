@@ -134,4 +134,6 @@
 #include <sys/elf.h>
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/sysctl.h>
 #include <sys/syslimits.h>
+#include <sys/user.h>
