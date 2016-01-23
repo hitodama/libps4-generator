@@ -165,8 +165,11 @@ class LibPS4Util:
             r'-D__POSIX_VISIBLE=200809',
             r'-D__XSI_VISIBLE=700',
             r'-D__BSD_VISIBLE=1',
+            r'-D_GNU_SOURCE=1',
             r'-D_DEFAULT_SOURCE=1',
             r'-D__ISO_C_VISIBLE=1999',
+            r'-D_WITH_DPRINTF=1',
+            r'-D_WITH_GETLINE=1',
             # From here on manual fixes for parsing various include files ...
             r'-Dlint',
             r'-D__builtin_va_list=int',
@@ -310,7 +313,7 @@ class LibPS4Generator():
     def importFile(self, file, idir):
         dest = os.path.join(self.config['paths']['libps4'], 'include', file)
         src = os.path.join(idir, file)
-        if os.path.exists(src):
+        if os.path.exists(src) and not os.path.exists(dest):
             LibPS4Util.touchDirs(dest)
             shutil.copy(src, dest)
             os.chmod(dest, stat.S_IREAD | stat.S_IWRITE)
