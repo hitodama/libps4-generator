@@ -126,25 +126,23 @@
 
 /* FreeBSD and heritage */
 
+#include <cpufunc.h>
 #include <elf.h>
 #include <err.h>
 #include <machine/segments.h>
+#include <machine/specialreg.h>
+#include <machine/stdarg.h>
 #include <machine/sysarch.h>
 #include <netinet6/in6.h>
-#include <sys/elf.h>
-#include <sys/event.h>
-#include <sys/ptrace.h>
-#include <sys/syscall.h>
-#include <sys/sysctl.h>
-#include <sys/syslimits.h>
-#include <sys/user.h>
-
+#include <opt_compat.h>
 #include <sys/cdefs.h>
-#include <sys/param.h>
-#include <sys/systm.h>
 #include <sys/conf.h>
 #include <sys/cpuvar.h>
+#include <sys/elf.h>
+#include <sys/event.h>
+#include <sys/eventvar.h>
 #include <sys/fcntl.h>
+#include <sys/filedesc.h>
 #include <sys/filio.h>
 #include <sys/jail.h>
 #include <sys/kdb.h>
@@ -157,13 +155,27 @@
 #include <sys/malloc.h>
 #include <sys/module.h>
 #include <sys/mutex.h>
+#include <sys/param.h>
 #include <sys/poll.h>
 #include <sys/proc.h>
+#include <sys/ptrace.h>
+#include <sys/refcount.h>
+#include <sys/sched.h>
 #include <sys/selinfo.h>
 #include <sys/smp.h>
-#include <sys/sysproto.h>
+#include <sys/sockopt.h>
+#include <sys/syscall.h>
+#include <sys/sysctl.h>
 #include <sys/sysent.h>
+#include <sys/syslimits.h>
+#include <sys/sysproto.h>
+#include <sys/systm.h>
+#include <sys/types.h>
 #include <sys/ucred.h>
 #include <sys/uio.h>
 #include <sys/unistd.h>
-#include <machine/stdarg.h>
+#include <sys/user.h>
+#include <vm/pmap.h>
+#include <vm/vm_extern.h>
+#include <vm/vm_map.h>
+#include <vm/vm.h>

@@ -93,14 +93,15 @@ int main(void)
 			if(sscanf(message, "%s %s", moduleName, symbolName) < 2)
 				break;
 
+			module = sceKernelLoadStartModule(moduleName, 0, NULL, 0, NULL, NULL);
+			r = sceKernelDlsym(module, symbolName, &symbol);
 			/* should use dlsym and lsm from kernel instead */
-			r = ps4ResolveModuleAndSymbol(moduleName, symbolName, &module, &symbol);
-			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && r != PS4ResolveStatusSuccess; ++i)
+			for(i = 0; i < sizeof(modules) / sizeof(modules[0]) && r != 0; ++i)
 			{
 				if(strcmp(modules[i], moduleName) == 0)
 					continue;
-				module = 0;
-				r = ps4ResolveModuleAndSymbol(modules[i], symbolName, &module, &symbol);
+				module = sceKernelLoadStartModule(modules[i], 0, NULL, 0, NULL, NULL);
+				r = sceKernelDlsym(module, symbolName, &symbol);
 				if(r == 0)
 					strcpy(moduleName, modules[i]);
 			}

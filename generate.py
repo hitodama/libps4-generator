@@ -10,8 +10,7 @@ import json
 from contextlib import contextmanager
 from pycparser import c_parser, c_ast, parse_file
 
-#warning to python gurus. Ugly target-oriented code.
-
+#warning to python gurus. Ugly, goal-oriented, fiddly and improvised code.
 class LibPS4Util:
 
     @staticmethod
@@ -97,7 +96,7 @@ class LibPS4Util:
         r = {}
         with open(file, 'r') as f:
             for l in f:
-                for s in re.findall('.*SYS_(.*)\t(.*)', l):
+                for s in re.findall('.*SYS_(.*)\t([0-9]*)', l):
                     r[s[0]] = s[1]
                 if 'MAXSYSCALL' in r:
                     del r['MAXSYSCALL']
@@ -150,7 +149,8 @@ class LibPS4Util:
 
         if includeFile.endswith('in6.h'):
             return (decls, None)
-        if 'ps4/internal/' in includeFile:
+        #print('<<<--- ' + includeFile)
+        if '/ps4/' in includeFile:
             return (decls, None)
 
         args = \
@@ -202,21 +202,39 @@ class LibPS4Util:
             r'-includesys/elf.h',
             r'-includevm/vm.h',
             r'-includemachine/pmap.h',
+            r'-includesys/lock.h',
             r'-D__ELF_WORD_SIZE=64',
         ]
 
+        isKernel = False
         try:
+            v = LibPS4FunctionDeclarationsVisitor(includeDir, decls)
+
+            if not (includeFile.endswith('sockopt.h') or includeFile.endswith('eventvar.h')):
+                ast = parse_file(includeFile, use_cpp=True,
+                    cpp_path='gcc',
+                    cpp_args=args
+                )
+
+                v.visit(ast)
+                #ast.show()
+
+            isKernel = True
+            args.remove(r'-Duintfptr_t=int')
+            args.remove(r'-Dintrmask_t=int')
+            #args.remove(r'-Dsa_family_t=int')
+            args.append(r'-D_KERNEL=1')
+            args.append(r'-D_STANDALONE=1')
             ast = parse_file(includeFile, use_cpp=True,
                 cpp_path='gcc',
                 cpp_args=args
             )
-
-            v = LibPS4FunctionDeclarationsVisitor(includeDir, decls)
             v.visit(ast)
-            #ast.show()
 
         except Exception as e:
-            print('--->>> ' + includeFile)
+            print('isKernel ' + str(isKernel) + ' --->>> ' + includeFile)
+            #print('--->>> ' + includeFile)
+            #print(isKernel)
             print(e)
             p = 'gcc ' + includeFile + ' ' + ' '.join(args).replace(' -std=c11',' "-std=c11').replace(' -i', '" "-i').replace(' -D', '" -D"') + '"'
             print(p)
@@ -341,6 +359,7 @@ class LibPS4Generator():
     def collect(self):
         decls = {}
         symbols = {}
+        kernelSymbols = {}
 
         sceIncludes = set(LibPS4Util.extractCIncludes(self.config['paths']['sceIndex']))
         p = os.path.join(self.config['paths']['boilerplate'], 'include', 'sys', 'syscall.h')
@@ -350,6 +369,12 @@ class LibPS4Generator():
         for file in LibPS4Util.walkFiles(inc):
             ds, err = LibPS4Util.functionDeclarations(inc, file)
             LibPS4Util.deepDictUpdate(decls, ds)
+
+        with jsonFile(self.config['paths']['kernelSymbols'], {}, 'r') as kernels:
+            for kernelName in kernels:
+                syms = kernels[kernelName]
+                for symbolName in syms:
+                    kernelSymbols[symbolName] = syms[symbolName]
 
         with jsonFile(self.config['paths']['symbolsAdd'], {}, 'r') as modules:
             for moduleName in modules:
@@ -366,6 +391,11 @@ class LibPS4Generator():
             else:
                 module = 'libSceLibcInternal.sprx'
 
+            kern = None
+            if d in kernelSymbols and kernelSymbols[d] == 'function':
+                kern = True
+                #del kernelSymbols[d]
+
             if decls[d] in sceIncludes:
                 module = self.moduleName(decls[d])
 
@@ -375,7 +405,13 @@ class LibPS4Generator():
             symbols[module][d] = {}
             if not sys is None:
                 symbols[module][d]['syscall'] = sys
+            if not kern is None:
+                symbols[module][d]['kernel'] = kern
             symbols[module][d]['offset'] = None
+
+        #symbols['kernel'] = []
+        #for s in sorted(kernelSymbols.keys()):
+        #    symbols['kernel'].append(s)
 
         jsonFile_(self.files['symbols'], symbols, 'w')
 
@@ -394,6 +430,8 @@ class LibPS4Generator():
         mods = {}
         with jsonFile(self.files['symbols'], {}) as modules:
             for moduleName in modules:
+                #if moduleName == 'kernel':
+                #    continue
                 symbols = modules[moduleName]
                 for symbolName in symbols:
                     symbol = symbols[symbolName]
@@ -433,41 +471,67 @@ class LibPS4Generator():
             pass
 
         out = {}
+        kern = []
+        sys = []
+        syskern = []
+        symout = 0
+        symall = 0
         with jsonFile(self.files['symbols'], {}, 'r') as modules:
             for moduleName in modules:
+                #if moduleName == 'kernel':
+                #    kern = modules[moduleName]
+                #    continue
                 out[moduleName] = {}
-                out[moduleName]['fsyms'] = []
-                out[moduleName]['fssyms'] = []
-                out[moduleName]['ssyms'] = []
+                out[moduleName]['fun'] = []
+                out[moduleName]['funsys'] = []
+                out[moduleName]['funkern'] = []
+                out[moduleName]['funsyskern'] = []
+                out[moduleName]['kern'] = []
+                out[moduleName]['sys'] = []
+                out[moduleName]['syskern'] = []
 
                 symbols = modules[moduleName]
                 for symbolName in symbols:
                     symbol = symbols[symbolName]
-                    if not 'syscall' in symbol and symbol['offset'] is None:
-                        continue
+                    symall += 1
+                    s = ''
+                    if 'offset' in symbol and not symbol['offset'] is None:
+                        s += 'fun'
                     if 'syscall' in symbol:
-                        if symbol['offset'] is None:
-                            out[moduleName]['ssyms'].append(symbolName)
-                        else:
-                            out[moduleName]['fssyms'].append(symbolName)
+                        s += 'sys'
+                    if 'kernel' in symbol:
+                        s += 'kern'
+                    if s in out[moduleName]:
+                        out[moduleName][s].append(symbolName)
                     else:
-                        out[moduleName]['fsyms'].append(symbolName)
+                        symout += 1
 
                 out[moduleName]['module'] = moduleName.replace('.sprx', '')
                 out[moduleName]['header'] = self.headerName(moduleName).replace('.h', '')
-                out[moduleName]['fsyms'] = sorted(out[moduleName]['fsyms'])
-                out[moduleName]['fssyms'] = sorted(out[moduleName]['fssyms'])
-                out[moduleName]['ssyms'] = sorted(out[moduleName]['ssyms'])
+
+                out[moduleName]['fun'] = sorted(out[moduleName]['fun'])
+                out[moduleName]['funsys'] = sorted(out[moduleName]['funsys'])
+                out[moduleName]['funkern'] = sorted(out[moduleName]['funkern'])
+                out[moduleName]['funsyskern'] = sorted(out[moduleName]['funsyskern'])
+
+                kern.extend(out[moduleName]['kern'])
+                sys.extend(out[moduleName]['sys'])
+                syskern.extend(out[moduleName]['syskern'])
+        print('Of ' + str(symall) + ' symbols, ' + str(symout) + ' where removed')
 
         with open(file, 'a') as f:
             for k in sorted(out.keys()):
                 f.write('$(eval $(call generate, ' +
                     out[k]['module'] + ', ' +
                     out[k]['header'] + ', ' +
-                    ' '.join(out[k]['fsyms']) + ', ' +
-                    ' '.join(out[k]['fssyms']) + ', ' +
-                    ' '.join(out[k]['ssyms']) +
+                    ' '.join(out[k]['fun']) + ', ' +
+                    ' '.join(out[k]['funsys']) + ', ' +
+                    ' '.join(out[k]['funkern']) + ', ' +
+                    ' '.join(out[k]['funsyskern']) +
                     '))\n')
+            f.write('$(eval $(call generateNonModule, syscall, ' + ' '.join(sys) + '))\n')
+            f.write('$(eval $(call generateNonModule, kernelFunction, ' + ' '.join(kern) + '))\n')
+            f.write('$(eval $(call generateNonModule, syscallAndKernelFunction, ' + ' '.join(syskern) + '))\n')
 
     def default(self):
         for act in self.config['default']:
